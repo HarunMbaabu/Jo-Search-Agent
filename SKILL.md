@@ -2,7 +2,7 @@
 name: job_agents
 description: Finds and ranks data jobs (Data Analytics/BI, Data Engineering/ETL, Data Science, ML/AI, Analytics Engineering, Python/SQL roles) for a Kenyan citizen living in Kenya, covering Kenyan roles, remote roles open to Kenya, and international roles with visa sponsorship. Scores each job against a verified CV, writes truthful ATS-readable CVs and cover letters, prepares applications in Chrome without submitting, and tracks every application in SQLite. Can optionally schedule searches.
 disable-model-invocation: true
-argument-hint: "[setup | search | rank | tailor <id> | prepare <id> | status | schedule preview|enable|disable]"
+argument-hint: "[setup [cv.pdf|folder] | search | rank | tailor <id> | prepare <id> | status | schedule preview|enable|disable]"
 ---
 
 # job_agents
@@ -49,7 +49,10 @@ application.
 3. Read `config/search_config.json`.
 
 ### 1. setup: select the CV and build the verified profile
-1. `python3 $SKILL/scripts/cv_profile.py discover`. If it finds more than one distinct CV,
+1. If `$ARGUMENTS` after `setup` is a path to a PDF, use that file and skip discovery. If it is a
+   folder, run `cv_profile.py discover "<folder>"`. Otherwise run
+   `python3 $SKILL/scripts/cv_profile.py discover`. If no CV is found, tell the user the folder
+   that was searched and ask for the path to their CV PDF. If it finds more than one distinct CV,
    **ask the user which one to use** (AskUserQuestion). Never guess. Hash-identical copies count
    as one CV.
 2. `python3 $SKILL/scripts/cv_profile.py extract "<pdf>" --print` writes `cv_text.txt` and

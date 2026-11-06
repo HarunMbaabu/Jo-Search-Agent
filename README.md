@@ -166,18 +166,93 @@ git -C "$env:USERPROFILE\.claude\skills\job_agents" pull               # Windows
 
 ## 3. Configure
 
-### 3.1 Put your CV where the skill can find it
+### 3.1 Where to put your CV
 
-By default the skill looks for PDF files in your **Desktop `cvs` folder**:
+The skill builds everything from **one CV**: the job ranking, the tailored CVs and the cover
+letters. It needs that CV as a **PDF** file. You can give it the CV in any of three ways. Pick
+whichever suits you.
 
-| OS | Default CV folder | Create it |
+#### Before you start: get your CV ready
+
+- **It must be a PDF.** If your CV is in Word (`.docx`), Google Docs or Pages, export it first:
+  - **Word:** *File → Save As → PDF* (or *File → Export → Create PDF*)
+  - **Google Docs:** *File → Download → PDF document*
+  - **Pages:** *File → Export To → PDF*
+  - **Canva:** *Share → Download → PDF Standard*
+- **It must contain real text, not a picture of text.** Open the PDF and try to highlight a
+  word with your mouse. If you can't select text, it's a scanned image and the skill can't read
+  it, so export it again from the original document.
+- **Use your most complete, up-to-date CV.** The skill will never add skills, jobs, dates or
+  results that aren't in it, so anything left out of your CV can't appear in your applications.
+- **Keep links clickable** (LinkedIn, GitHub, portfolio). The skill picks them up from the PDF.
+- Any file name works, for example `Jane_Doe_CV.pdf`. Upper- or lower-case `.pdf` are both fine.
+
+#### Option A: use the default CV folder (easiest)
+
+Make a folder called `cvs` on your Desktop and copy your CV PDF into it:
+
+| OS | Folder | Create it from the terminal |
 |---|---|---|
-| macOS / Linux | `~/Desktop/cvs` | `mkdir -p ~/Desktop/cvs` |
+| macOS | `/Users/<you>/Desktop/cvs` | `mkdir -p ~/Desktop/cvs` |
+| Linux | `/home/<you>/Desktop/cvs` | `mkdir -p ~/Desktop/cvs` |
 | Windows | `C:\Users\<you>\Desktop\cvs` | `New-Item -ItemType Directory -Force "$env:USERPROFILE\Desktop\cvs"` |
 
-Copy your CV PDF into that folder. If the folder has more than one CV, the skill asks you which
-one to use. If your Desktop is somewhere else (for example, synced to OneDrive on Windows), set
-`cv_directory` to the real path.
+You can also do it without a terminal: right-click on the Desktop, choose **New Folder**, name it
+`cvs`, then drag your CV PDF into it.
+
+Then run:
+
+```
+/job_agents setup
+```
+
+> **Windows + OneDrive:** if your Desktop is backed up to OneDrive, its real location is usually
+> `C:\Users\<you>\OneDrive\Desktop`. Either use Option B or C, or set
+> `"cv_directory": "~/OneDrive/Desktop/cvs"` in the config.
+
+#### Option B: point the skill at your CV directly (no folder needed)
+
+Leave your CV wherever it already is and give its path when you run setup:
+
+```
+/job_agents setup ~/Documents/Jane_Doe_CV.pdf                     # macOS / Linux
+/job_agents setup C:/Users/jane/Documents/Jane_Doe_CV.pdf          # Windows
+```
+
+If the path contains spaces, put it in quotes: `/job_agents setup "~/My Documents/CV.pdf"`.
+You can also give a folder instead of a file: `/job_agents setup ~/Documents/Job-hunting`.
+
+**Tip:** to get the exact path, drag the PDF file into the terminal window and it will paste
+the path for you. On Windows you can also *Shift + right-click* the file and choose **Copy as path**.
+
+#### Option C: change the default folder permanently
+
+If you always keep CVs in a particular folder, open `config/search_config.json` in the skill
+folder and change `cv_directory`:
+
+```json
+"cv_directory": "~/Documents/CVs"
+```
+
+On Windows, use forward slashes (`"C:/Users/jane/Documents/CVs"`) or `~/Documents/CVs`.
+
+#### Good to know
+
+- **More than one CV in the folder?** The skill lists them and asks which one to use. Identical
+  copies count as one. Only PDFs directly inside the folder are checked. Subfolders are ignored.
+- **No CV found?** The skill tells you which folder it searched and asks you for the path.
+- **Your CV file is never changed, moved or uploaded anywhere.** The skill reads it and saves the
+  extracted text and a verified profile in your private data folder
+  (see [3.4](#34-where-your-private-data-lives)).
+- **You check the result.** After reading your CV, the skill shows you a summary of what it
+  extracted, plus anything that looks inconsistent (for example, years of experience that don't
+  match your dates). You confirm or correct it before it's used.
+- **Updated your CV?** Replace the PDF and run `/job_agents setup` again. The profile is rebuilt
+  from the new version.
+- **Don't put your CV inside the skill folder** (`.claude/skills/job_agents`). That folder is a
+  Git repository, so your CV could end up shared by mistake.
+- **Several people on one computer?** Each person should use their own computer user account.
+  CVs, profiles and application history are stored separately per account.
 
 ### 3.2 Edit `config/search_config.json`
 
@@ -249,7 +324,7 @@ Open a terminal in any folder (Terminal, PowerShell or Git Bash), run `claude`, 
 | Command | What it does |
 |---|---|
 | `/job_agents` | Shows the pipeline status and suggests the next step |
-| `/job_agents setup` | Picks your CV, extracts it and builds `profile.json`. **Run this first.** You review and confirm the profile, including any inconsistencies it flags. |
+| `/job_agents setup [cv.pdf or folder]` | Reads your CV and builds your verified profile. **Run this first.** See [3.1](#31-where-to-put-your-cv) for where to put your CV. You review and confirm the profile, including any inconsistencies it flags. |
 | `/job_agents search` | Searches the web, checks each posting is real and open, removes duplicates, then scores and shortlists |
 | `/job_agents rank` | Scores any jobs that haven't been scored yet |
 | `/job_agents tailor 12` | Writes a CV and cover letter tailored to job 12, then checks every claim against your profile |
@@ -336,7 +411,7 @@ Logs go to `~/.job_agents/logs/`. To stop, delete the line with `crontab -e`.
 | Problem | OS | Fix |
 |---|---|---|
 | `/job_agents` doesn't appear | All | Make sure the folder is named exactly `job_agents`, is inside `.claude/skills/`, and contains `SKILL.md`. Then restart Claude Code. |
-| "No CVs found" | All | Check `cv_directory` in the config and make sure the file ends in `.pdf`. On Windows, check whether your Desktop is inside OneDrive. |
+| "No CVs found" / "CV directory not found" | All | Make sure the CV is a PDF directly inside the folder (not a subfolder). Or skip the folder and run `/job_agents setup <path-to-cv.pdf>`. On Windows, check whether your Desktop is inside OneDrive. |
 | "Install pypdf ... to extract PDFs" | Linux / Windows | `python3 -m pip install --user pypdf` (Windows: `py -m pip install --user pypdf`). |
 | The extracted CV text is empty | All | The PDF is probably a scanned image. Export a text PDF from Word or Google Docs. |
 | "no DOCX converter found" | Linux / Windows | Install `pandoc` or LibreOffice (see the install steps), then open a new terminal. |

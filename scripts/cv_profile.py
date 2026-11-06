@@ -67,7 +67,7 @@ def sha256(path: Path) -> str:
 
 def discover(directory: Path) -> list[dict]:
     seen: dict[str, dict] = {}
-    for p in sorted(directory.glob("*.pdf"), key=lambda x: x.stat().st_mtime, reverse=True):
+    for p in sorted((f for f in directory.iterdir() if f.is_file() and f.suffix.lower() == ".pdf"), key=lambda x: x.stat().st_mtime, reverse=True):
         digest = sha256(p)
         entry = seen.setdefault(digest, {"sha256": digest[:16], "path": str(p), "duplicates": [],
                                          "modified": datetime.fromtimestamp(p.stat().st_mtime).isoformat(timespec="minutes")})
