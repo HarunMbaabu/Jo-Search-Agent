@@ -16,7 +16,10 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import html
+import shutil
 import subprocess
+import zipfile
 import sys
 from pathlib import Path
 
@@ -39,9 +42,16 @@ def load_terms() -> list[str]:
 def read_doc(path: Path) -> str:
     suffix = path.suffix.lower()
     if suffix == ".docx":
-        res = subprocess.run(["textutil", "-convert", "txt", "-stdout", str(path)],
-                             capture_output=True, text=True, check=True)
-        return res.stdout
+        if shutil.which("textutil"):
+            res = subprocess.run(["textutil", "-convert", "txt", "-stdout", str(path)],
+                                 capture_output=True, text=True, check=True)
+            return res.stdout
+        # Cross-platform fallback: read the paragraphs straight out of the DOCX zip.
+        with zipfile.ZipFile(path) as z:
+            xml = z.read("word/document.xml").decode("utf-8")
+        xml = re.sub(r"</w:p>", "\n", xml)
+        xml = re.sub(r"<w:tab/>", "\t", xml)
+        return html.unescape(re.sub(r"<[^>]+>", "", xml))
     text = path.read_text(encoding="utf-8")
     if suffix in (".html", ".htm"):
         text = re.sub(r"<[^>]+>", " ", text)

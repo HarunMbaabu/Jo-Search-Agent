@@ -15,8 +15,8 @@ Supported Markdown subset:
 Usage:
   render_docs.py INPUT.md --out-dir DIR [--basename NAME] [--formats docx,pdf,txt]
 
-Outputs are written with 0600 permissions. DOCX via macOS textutil; PDF via headless Google Chrome
-(skipped with a warning if Chrome is unavailable). Run verify_claims.py on the output afterwards.
+Outputs are written with 0600 permissions. DOCX via macOS textutil, pandoc or LibreOffice;
+PDF via headless Chrome/Edge (set CHROME_PATH to override). Missing tools are skipped with a warning. Run verify_claims.py on the output afterwards.
 """
 from __future__ import annotations
 
@@ -30,11 +30,44 @@ import sys
 import tempfile
 from pathlib import Path
 
-CHROME_CANDIDATES = [
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    shutil.which("google-chrome") or "",
-    shutil.which("chromium") or "",
-]
+def _chrome_candidates() -> list[str]:
+    names = ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
+             "chrome", "msedge", "microsoft-edge"]
+    fixed = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+             "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"]
+    for env in ("PROGRAMFILES", "PROGRAMFILES(X86)", "LOCALAPPDATA"):
+        base = os.environ.get(env)
+        if base:
+            fixed += [os.path.join(base, "Google", "Chrome", "Application", "chrome.exe"),
+                      os.path.join(base, "Microsoft", "Edge", "Application", "msedge.exe")]
+    return [os.environ.get("CHROME_PATH", "")] + fixed + [shutil.which(n) or "" for n in names]
+
+
+CHROME_CANDIDATES = _chrome_candidates()
+
+
+def html_to_docx(html_path: Path, out: Path) -> bool:
+    """macOS textutil, else pandoc, else LibreOffice. Returns False if none is available."""
+    if shutil.which("textutil"):
+        subprocess.run(["textutil", "-convert", "docx", str(html_path), "-output", str(out)],
+                       check=True, capture_output=True)
+        return True
+    if shutil.which("pandoc"):
+        subprocess.run(["pandoc", str(html_path), "-f", "html", "-o", str(out)],
+                       check=True, capture_output=True)
+        return True
+    soffice = shutil.which("soffice") or shutil.which("libreoffice")
+    if not soffice and os.environ.get("PROGRAMFILES"):
+        cand = Path(os.environ["PROGRAMFILES"]) / "LibreOffice" / "program" / "soffice.exe"
+        soffice = str(cand) if cand.exists() else None
+    if soffice:
+        with tempfile.TemporaryDirectory() as tmp:
+            subprocess.run([soffice, "--headless", "--convert-to", "docx:MS Word 2007 XML",
+                            "--outdir", tmp, str(html_path)], check=True, capture_output=True,
+                           timeout=180)
+            shutil.move(str(Path(tmp) / f"{html_path.stem}.docx"), str(out))
+        return True
+    return False
 
 CSS = """
 body { font-family: Calibri, Arial, Helvetica, sans-serif; font-size: 11pt; line-height: 1.3;
@@ -118,9 +151,11 @@ def render(md_path: Path, out_dir: Path, basename: str, formats: set[str]) -> li
         t.write_text(md_to_text(md), encoding="utf-8"); chmod_private(t); produced.append(t)
     if "docx" in formats:
         d = out_dir / f"{basename}.docx"
-        subprocess.run(["textutil", "-convert", "docx", str(html_path), "-output", str(d)],
-                       check=True, capture_output=True)
-        chmod_private(d); produced.append(d)
+        if html_to_docx(html_path, d):
+            chmod_private(d); produced.append(d)
+        else:
+            print("WARNING: no DOCX converter found (macOS textutil, pandoc or LibreOffice) - "
+                  "DOCX skipped.", file=sys.stderr)
     if "pdf" in formats:
         chrome = next((c for c in CHROME_CANDIDATES if c and Path(c).exists()), None)
         if not chrome:
