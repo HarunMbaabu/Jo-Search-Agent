@@ -1,0 +1,130 @@
+# Technology / qualification vocabulary used by verify_claims.py.
+# Any of these appearing in a generated CV or cover letter MUST be backed by the verified profile.
+# One term per line; case-insensitive; '#' starts a comment. Extend freely.
+python
+sql
+scala
+java
+javascript
+typescript
+c++
+golang
+rust
+julia
+matlab
+sas
+spss
+stata
+excel
+power bi
+tableau
+looker
+looker studio
+qlik
+metabase
+superset
+ssrs
+ssis
+ssas
+dax
+aws
+azure
+gcp
+google cloud
+s3
+redshift
+glue
+athena
+emr
+lambda
+kinesis
+rds
+dynamodb
+bigquery
+dataflow
+dataproc
+cloud composer
+synapse
+azure data factory
+data factory
+fabric
+microsoft fabric
+snowflake
+databricks
+delta lake
+iceberg
+hudi
+hadoop
+hive
+spark
+pyspark
+flink
+kafka
+airflow
+prefect
+dagster
+luigi
+nifi
+fivetran
+airbyte
+stitch
+informatica
+talend
+dbt
+terraform
+docker
+kubernetes
+jenkins
+github actions
+gitlab ci
+postgresql
+mysql
+oracle
+sql server
+mongodb
+cassandra
+redis
+elasticsearch
+neo4j
+pinecone
+weaviate
+chroma
+pandas
+numpy
+scikit-learn
+tensorflow
+pytorch
+keras
+xgboost
+lightgbm
+catboost
+mlflow
+kubeflow
+sagemaker
+vertex ai
+hugging face
+langchain
+llamaindex
+openai
+llms
+rag
+nltk
+spacy
+textblob
+opencv
+fastapi
+flask
+django
+streamlit
+great expectations
+pmp
+scrum master
+aws certified
+azure certified
+google certified
+professional data engineer
+phd
+msc
+master's
+masters
+mba

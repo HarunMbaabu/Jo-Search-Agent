@@ -1,0 +1,44 @@
+{
+  "cv_directory": "~/Desktop/cvs",
+  "timezone": "Africa/Nairobi",
+  "candidate_context": {
+    "citizenship": "Kenya",
+    "residence": "Kenya",
+    "needs_sponsorship_outside_kenya": true
+  },
+  "role_families": {
+    "data_analytics_bi": ["Data Analyst", "Business Intelligence Analyst", "BI Developer", "Reporting Analyst", "Power BI Developer", "Insights Analyst"],
+    "data_engineering_etl": ["Data Engineer", "ETL Developer", "Big Data Engineer", "Data Platform Engineer", "Cloud Data Engineer", "Data Pipeline Engineer"],
+    "data_science": ["Data Scientist", "Applied Scientist", "Decision Scientist", "Quantitative Analyst", "Credit Risk Data Scientist"],
+    "ml_ai": ["Machine Learning Engineer", "AI Engineer", "MLOps Engineer", "NLP Engineer", "LLM Engineer", "GenAI Engineer"],
+    "analytics_engineering": ["Analytics Engineer", "dbt Developer", "Data Modeler", "Data Warehouse Engineer"],
+    "python_sql_data": ["Python Developer (Data)", "SQL Developer", "Database Developer", "Data Developer"]
+  },
+  "seniority_filter": ["mid", "senior", "lead"],
+  "location_tiers": [
+    {"tier": "kenya", "label": "Jobs in Kenya (Nairobi, Mombasa, Kisumu, nationwide, hybrid/onsite)", "eligibility_score": 100},
+    {"tier": "remote_kenya_ok", "label": "Remote roles that explicitly accept Kenya / Africa / EMEA / worldwide / anywhere", "eligibility_score": 90},
+    {"tier": "relocation_sponsored", "label": "International roles offering relocation AND visa/work-permit sponsorship", "eligibility_score": 70},
+    {"tier": "unclear", "label": "Remote/international with unstated eligibility - verify before drafting", "eligibility_score": 30},
+    {"tier": "ineligible", "label": "Requires existing right-to-work elsewhere, US/EU residency only, no sponsorship", "eligibility_score": 0}
+  ],
+  "ranking_weights": {
+    "technical_skills": 0.35,
+    "experience": 0.25,
+    "projects": 0.15,
+    "education": 0.10,
+    "preferred_qualifications": 0.10,
+    "location_eligibility": 0.05
+  },
+  "thresholds": {
+    "shortlist_min_score": 60,
+    "strong_match_score": 75,
+    "max_jobs_per_search": 25
+  },
+  "excluded_keywords": ["unpaid", "commission only", "pay to apply", "registration fee", "training fee"],
+  "schedule": {
+    "enabled": false,
+    "times_local": ["08:00", "11:00", "14:00", "17:00", "20:00"],
+    "requires_user_approval": true
+  }
+}
