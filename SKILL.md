@@ -151,7 +151,7 @@ deadlines and suggested next actions. To update outcomes, run
 
 ### 7. schedule preview|enable|disable (optional)
 - `schedule.py` uses macOS launchd. On Linux or Windows, don't run it. Point the user to the
-  README section "Scheduled searches" (cron or Task Scheduler) and show them the steps.
+  "Scheduled searches" section of `docs/CONFIGURATION.md` (cron or Task Scheduler) and show them the steps.
 - `preview`: run `python3 $SKILL/scripts/schedule.py preview`. It shows the 08:00, 11:00,
   14:00, 17:00 and 20:00 Africa/Nairobi times and the LaunchAgent. It changes nothing.
 - `enable`: show the preview first, then ask the user for explicit approval. Only after they

@@ -1,441 +1,167 @@
-# Jo Search Agent (`job_agents` skill for Claude Code)
+# Jo Search Agent
 
-A Claude Code skill that finds data jobs, ranks them against your CV, writes truthful
-ATS-friendly CVs and cover letters, and prepares applications in Chrome for you to review.
-**It never submits an application without your explicit approval for that specific job.**
+An AI job-search assistant for data professionals, built as a **Claude Code skill**.
 
-It covers these role families: Data Analytics/BI, Data Engineering/ETL, Data Science, ML/AI,
-Analytics Engineering and Python/SQL. Out of the box it is tuned for a candidate based in Kenya,
-and you can change that (see [If you are not based in Kenya](#33-if-you-are-not-based-in-kenya)).
+It finds data jobs, ranks them against your CV, writes tailored CVs and cover letters, and fills
+in applications for you to review. **It never submits anything without your approval.**
 
-The skill only runs when you call it with `/job_agents`. Claude never triggers it on its own.
+**Roles covered:** Data Analyst / BI · Data Engineer / ETL · Data Scientist · ML / AI Engineer ·
+Analytics Engineer · Python / SQL Developer
 
-**Contents:**
-[1. Requirements](#1-requirements) ·
-[2. Install (macOS / Linux / Windows)](#2-install) ·
-[3. Configure](#3-configure) ·
-[4. Use](#4-use) ·
-[5. Scheduled searches](#5-scheduled-searches-optional) ·
-[6. Safety rules](#6-safety-rules-built-into-the-skill) ·
-[7. Troubleshooting](#7-troubleshooting)
+**Works on:** macOS · Linux · Windows
+
+> Out of the box it's set up for job seekers based in **Kenya** (local jobs, remote roles open to
+> Kenya, and international jobs with visa sponsorship). Anyone else can change this; see
+> [Configuration](docs/CONFIGURATION.md#if-you-are-not-based-in-kenya).
 
 ---
 
-## 1. Requirements
+## How it works
 
-### What works on each operating system
-
-| Feature | macOS | Linux | Windows 10/11 |
-|---|---|---|---|
-| Search, rank, track jobs | ✅ | ✅ | ✅ |
-| Read your CV PDF | ✅ built in | ✅ needs `pypdf` | ✅ needs `pypdf` |
-| TXT output | ✅ | ✅ | ✅ |
-| DOCX output | ✅ built in (`textutil`) | ✅ needs `pandoc` or LibreOffice | ✅ needs `pandoc` or LibreOffice |
-| PDF output | ✅ Chrome or Edge | ✅ Chrome, Chromium or Edge | ✅ Chrome or Edge |
-| Fill in applications in the browser | ✅ Claude in Chrome | ✅ Claude in Chrome | ✅ Claude in Chrome |
-| Scheduled searches | ✅ built in (`launchd`) | ✅ manual `cron` setup | ✅ manual Task Scheduler setup |
-
-### Software you need
-
-| Software | Why | Required? |
-|---|---|---|
-| **Claude Code** | Runs the skill. You need a Claude subscription or an Anthropic API key. | Yes |
-| **Python 3.9+** | All scripts. They use only the standard library. | Yes |
-| **Git** | Downloading and updating the skill. Claude Code on Windows also needs Git for Windows. | Yes |
-| **Google Chrome** (or Microsoft Edge) | PDF output, plus the Claude in Chrome extension | Recommended |
-| **Claude in Chrome extension** | Lets Claude fill in application forms. Without it you get a copy-and-paste sheet. | Optional |
-| **pypdf** | Reading your CV PDF | Linux/Windows: yes. macOS: optional. |
-| **pandoc** *or* **LibreOffice** | Creating DOCX files | Linux/Windows: yes. macOS: no. |
-| **Your CV as a PDF** | Setup | Yes. It must be a text PDF, not a scanned image. |
+1. **Reads your CV** and builds a verified profile. You check and confirm it.
+2. **Searches** job boards and company career pages, and drops scams, closed jobs and duplicates.
+3. **Scores** each job against your profile, out of 100, and shows a ranked shortlist.
+4. **Writes** a tailored CV and cover letter, using only facts from your CV. Nothing is invented.
+5. **Fills in** the application in Chrome and stops before Submit. You review it and submit.
 
 ---
 
-## 2. Install
+## Quick start
 
-The skill folder **must be named `job_agents`** and sit inside your Claude skills folder:
+### Step 1: Install
 
-| OS | Skills folder |
-|---|---|
-| macOS / Linux | `~/.claude/skills/job_agents` |
-| Windows | `%USERPROFILE%\.claude\skills\job_agents` (e.g. `C:\Users\you\.claude\skills\job_agents`) |
+You need **Claude Code** (with a Claude subscription or API key), **Python 3.9+** and **Git**.
+Click your operating system:
 
-To install it for one project only, use `<your-project>/.claude/skills/job_agents` instead.
-
-### 2A. macOS
+<details>
+<summary><b>macOS</b></summary>
 
 ```bash
-# 1. Developer tools: git and python3
-xcode-select --install          # or: brew install git python
-
-# 2. Claude Code
+xcode-select --install
 curl -fsSL https://claude.ai/install.sh | bash
-
-# 3. The skill
-mkdir -p ~/.claude/skills
 git clone https://github.com/HarunMbaabu/Jo-Search-Agent.git ~/.claude/skills/job_agents
-
-# 4. Optional: better PDF text extraction
-python3 -m pip install --user pypdf
-
-# 5. Check it works
-python3 -m unittest discover -s ~/.claude/skills/job_agents/tests -v
 ```
+</details>
 
-Install [Google Chrome](https://www.google.com/chrome/) for PDF output.
-
-### 2B. Linux (Ubuntu/Debian; use the equivalent packages on Fedora/Arch)
+<details>
+<summary><b>Linux (Ubuntu / Debian)</b></summary>
 
 ```bash
-# 1. Base tools + DOCX converter
-sudo apt update
-sudo apt install -y git python3 python3-pip pandoc     # or: libreoffice-writer instead of pandoc
-
-# 2. PDF reader for your CV
-python3 -m pip install --user pypdf
-#   If pip says "externally-managed-environment", use:  sudo apt install python3-pypdf
-
-# 3. Claude Code
+sudo apt update && sudo apt install -y git python3 python3-pip pandoc
+python3 -m pip install --user pypdf        # or: sudo apt install python3-pypdf
 curl -fsSL https://claude.ai/install.sh | bash
-
-# 4. The skill
-mkdir -p ~/.claude/skills
 git clone https://github.com/HarunMbaabu/Jo-Search-Agent.git ~/.claude/skills/job_agents
-
-# 5. Check it works
-python3 -m unittest discover -s ~/.claude/skills/job_agents/tests -v
 ```
+</details>
 
-Install Google Chrome or Chromium for PDF output. If it's installed somewhere unusual, set
-`CHROME_PATH=/path/to/chrome`.
+<details>
+<summary><b>Windows 10 / 11</b></summary>
 
-### 2C. Windows 10/11
-
-Run these in **PowerShell**:
+In **PowerShell**:
 
 ```powershell
-# 1. Git for Windows (Claude Code needs it), Python and pandoc
 winget install --id Git.Git -e
 winget install --id Python.Python.3.12 -e
-winget install --id JohnMacFarlane.Pandoc -e        # or: winget install TheDocumentFoundation.LibreOffice
-
-# Close and reopen PowerShell so the new PATH applies, then:
-
-# 2. PDF reader for your CV
+winget install --id JohnMacFarlane.Pandoc -e
+# Close and reopen PowerShell, then:
 py -m pip install --user pypdf
-
-# 3. Claude Code
 irm https://claude.ai/install.ps1 | iex
-
-# 4. The skill
-New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null
 git clone https://github.com/HarunMbaabu/Jo-Search-Agent.git "$env:USERPROFILE\.claude\skills\job_agents"
-
-# 5. Check it works
-py -m unittest discover -s "$env:USERPROFILE\.claude\skills\job_agents\tests" -v
 ```
 
-**Make `python3` work.** The skill runs its scripts as `python3 ...`, through Git Bash. Open
-**Git Bash** and run `python3 --version`. If you get an error, or the Microsoft Store opens:
+Then open **Git Bash** and check that `python3 --version` works. If it doesn't, follow
+[this fix](docs/INSTALL.md#make-python3-work-on-windows).
+</details>
 
-1. Go to *Settings → Apps → Advanced app settings → App execution aliases* and switch **off**
-   both `python.exe` and `python3.exe`.
-2. Create a `python3` copy of Python (in PowerShell):
-   ```powershell
-   $py = (Get-Command python).Source
-   Copy-Item $py (Join-Path (Split-Path $py) "python3.exe")
-   ```
-3. Open a new Git Bash window and check `python3 --version` again.
+Also recommended: [Google Chrome](https://www.google.com/chrome/) and the **Claude in Chrome**
+extension, which let the skill create PDFs and fill in application forms.
 
-> **Alternative: WSL.** You can also run Claude Code inside WSL (Ubuntu) and follow the
-> [Linux steps](#2b-linux-ubuntudebian-use-the-equivalent-packages-on-fedoraarch). In that case,
-> keep your CV inside the Linux file system, or point `cv_directory` at `/mnt/c/Users/<you>/Desktop/cvs`.
+Full instructions, checks and fixes are in **[docs/INSTALL.md](docs/INSTALL.md)**.
 
-### Confirm the skill is loaded (all systems)
+### Step 2: Add your CV
 
-Start Claude Code with `claude`, then type `/job_agents`. The skill should appear in the
-slash-command list. If it doesn't, see [Troubleshooting](#7-troubleshooting).
+Make a folder called **`cvs`** on your Desktop and put your CV in it **as a PDF**.
 
-### Updating
-
-```bash
-git -C ~/.claude/skills/job_agents pull                                # macOS / Linux
-git -C "$env:USERPROFILE\.claude\skills\job_agents" pull               # Windows PowerShell
-```
-
----
-
-## 3. Configure
-
-### 3.1 Where to put your CV
-
-The skill builds everything from **one CV**: the job ranking, the tailored CVs and the cover
-letters. It needs that CV as a **PDF** file. You can give it the CV in any of three ways. Pick
-whichever suits you.
-
-#### Before you start: get your CV ready
-
-- **It must be a PDF.** If your CV is in Word (`.docx`), Google Docs or Pages, export it first:
-  - **Word:** *File → Save As → PDF* (or *File → Export → Create PDF*)
-  - **Google Docs:** *File → Download → PDF document*
-  - **Pages:** *File → Export To → PDF*
-  - **Canva:** *Share → Download → PDF Standard*
-- **It must contain real text, not a picture of text.** Open the PDF and try to highlight a
-  word with your mouse. If you can't select text, it's a scanned image and the skill can't read
-  it, so export it again from the original document.
-- **Use your most complete, up-to-date CV.** The skill will never add skills, jobs, dates or
-  results that aren't in it, so anything left out of your CV can't appear in your applications.
-- **Keep links clickable** (LinkedIn, GitHub, portfolio). The skill picks them up from the PDF.
-- Any file name works, for example `Jane_Doe_CV.pdf`. Upper- or lower-case `.pdf` are both fine.
-
-#### Option A: use the default CV folder (easiest)
-
-Make a folder called `cvs` on your Desktop and copy your CV PDF into it:
-
-| OS | Folder | Create it from the terminal |
+| macOS | Linux | Windows |
 |---|---|---|
-| macOS | `/Users/<you>/Desktop/cvs` | `mkdir -p ~/Desktop/cvs` |
-| Linux | `/home/<you>/Desktop/cvs` | `mkdir -p ~/Desktop/cvs` |
-| Windows | `C:\Users\<you>\Desktop\cvs` | `New-Item -ItemType Directory -Force "$env:USERPROFILE\Desktop\cvs"` |
+| `/Users/<you>/Desktop/cvs` | `/home/<you>/Desktop/cvs` | `C:\Users\<you>\Desktop\cvs` |
 
-You can also do it without a terminal: right-click on the Desktop, choose **New Folder**, name it
-`cvs`, then drag your CV PDF into it.
+Already keep your CV somewhere else? You can skip the folder (see [step 3](#step-3-set-up-your-profile)).
 
-Then run:
+### Step 3: Set up your profile
+
+Open a terminal, start Claude Code, and run setup:
 
 ```
+claude
 /job_agents setup
 ```
 
-> **Windows + OneDrive:** if your Desktop is backed up to OneDrive, its real location is usually
-> `C:\Users\<you>\OneDrive\Desktop`. Either use Option B or C, or set
-> `"cv_directory": "~/OneDrive/Desktop/cvs"` in the config.
+To use a CV from another location, give its path:
+`/job_agents setup ~/Documents/My_CV.pdf`
 
-#### Option B: point the skill at your CV directly (no folder needed)
+Claude reads your CV, shows you what it found, and asks you to confirm it.
 
-Leave your CV wherever it already is and give its path when you run setup:
-
-```
-/job_agents setup ~/Documents/Jane_Doe_CV.pdf                     # macOS / Linux
-/job_agents setup C:/Users/jane/Documents/Jane_Doe_CV.pdf          # Windows
-```
-
-If the path contains spaces, put it in quotes: `/job_agents setup "~/My Documents/CV.pdf"`.
-You can also give a folder instead of a file: `/job_agents setup ~/Documents/Job-hunting`.
-
-**Tip:** to get the exact path, drag the PDF file into the terminal window and it will paste
-the path for you. On Windows you can also *Shift + right-click* the file and choose **Copy as path**.
-
-#### Option C: change the default folder permanently
-
-If you always keep CVs in a particular folder, open `config/search_config.json` in the skill
-folder and change `cv_directory`:
-
-```json
-"cv_directory": "~/Documents/CVs"
-```
-
-On Windows, use forward slashes (`"C:/Users/jane/Documents/CVs"`) or `~/Documents/CVs`.
-
-#### Good to know
-
-- **More than one CV in the folder?** The skill lists them and asks which one to use. Identical
-  copies count as one. Only PDFs directly inside the folder are checked. Subfolders are ignored.
-- **No CV found?** The skill tells you which folder it searched and asks you for the path.
-- **Your CV file is never changed, moved or uploaded anywhere.** The skill reads it and saves the
-  extracted text and a verified profile in your private data folder
-  (see [3.4](#34-where-your-private-data-lives)).
-- **You check the result.** After reading your CV, the skill shows you a summary of what it
-  extracted, plus anything that looks inconsistent (for example, years of experience that don't
-  match your dates). You confirm or correct it before it's used.
-- **Updated your CV?** Replace the PDF and run `/job_agents setup` again. The profile is rebuilt
-  from the new version.
-- **Don't put your CV inside the skill folder** (`.claude/skills/job_agents`). That folder is a
-  Git repository, so your CV could end up shared by mistake.
-- **Several people on one computer?** Each person should use their own computer user account.
-  CVs, profiles and application history are stored separately per account.
-
-### 3.2 Edit `config/search_config.json`
-
-| Setting | What it controls | Default |
-|---|---|---|
-| `cv_directory` | Folder that holds your CV PDFs. `~` works on every OS. On Windows you can also write `C:/Users/you/Desktop/cvs` (use forward slashes, or escape backslashes as `\\`). | `~/Desktop/cvs` |
-| `timezone` | Your time zone, as an [IANA name](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), for scheduled searches | `Africa/Nairobi` |
-| `candidate_context` | Your citizenship, where you live, and whether you need visa sponsorship | Kenya, Kenya, `true` |
-| `role_families` | Job titles to search for, grouped by family. Add or remove titles freely. | 6 data families |
-| `seniority_filter` | Levels to include | `mid`, `senior`, `lead` |
-| `location_tiers` | How eligible each location type is, and its score | Kenya, then remote-OK, then sponsored relocation |
-| `ranking_weights` | Scoring weights. They must add up to 1.0. | skills .35, experience .25, projects .15, education .10, preferred .10, location .05 |
-| `thresholds.shortlist_min_score` | Minimum score to shortlist a job | `60` |
-| `thresholds.strong_match_score` | Score that counts as a "strong match" | `75` |
-| `thresholds.max_jobs_per_search` | Cap on new jobs per search | `25` |
-| `excluded_keywords` | Postings that contain these words are dropped | scam and fee phrases |
-| `schedule.times_local` | Times for scheduled searches, in `timezone` | 08:00, 11:00, 14:00, 17:00, 20:00 |
-
-`config/tech_terms.txt` lists the technologies the anti-fabrication checker watches for. Add any
-tools from your field that are missing.
-
-> **Windows users:** if `tzdata` errors appear when scheduling, run `py -m pip install --user tzdata`.
-
-### 3.3 If you are not based in Kenya
-
-The Kenyan focus is set in more than one place. Update all of these:
-
-1. `config/search_config.json`: `candidate_context`, `timezone`, and the labels in `location_tiers`.
-2. `SKILL.md`: the `description` line, the **Inputs → Candidate context** line, and the example
-   search queries (for example, `Nairobi` and `site:careers.un.org`).
-3. `references/search_sources.md`: the local job boards and scam signals.
-4. `references/document_guidelines.md`: the example contact line (`Nairobi, Kenya`).
-
-### 3.4 Where your private data lives
-
-Your personal data is **never** stored in the skill folder. It goes to a private folder:
-
-| OS | Default location | Protection |
-|---|---|---|
-| macOS / Linux | `~/.job_agents/` | Folder mode 700, files mode 600 (only you can read them) |
-| Windows | `C:\Users\<you>\.job_agents\` | Protected by your Windows user account. Don't put it in a shared folder. |
+### Step 4: Find jobs
 
 ```
-profile.json      verified facts taken from your CV (the only source for any claim)
-cv_text.txt       extracted CV text
-tracker.db        SQLite record of every job, score, approval and submission
-applications/     tailored CVs and cover letters (DOCX / PDF / TXT)
-inbox/  logs/
+/job_agents search
 ```
 
-To use a different location, set `JOB_AGENTS_HOME`:
-
-```bash
-echo 'export JOB_AGENTS_HOME="$HOME/Documents/job_agents_data"' >> ~/.zshrc    # macOS (zsh)
-echo 'export JOB_AGENTS_HOME="$HOME/Documents/job_agents_data"' >> ~/.bashrc   # Linux (bash)
-```
-```powershell
-setx JOB_AGENTS_HOME "$env:USERPROFILE\Documents\job_agents_data"            # Windows (new terminals)
-```
-
-> Don't commit your data folder or put your CV inside the skill folder if you fork this repo.
+You get a ranked list of jobs with scores, matched skills, gaps, deadlines and links.
 
 ---
 
-## 4. Use
+## Your CV: what to know
 
-Open a terminal in any folder (Terminal, PowerShell or Git Bash), run `claude`, then:
+- **It must be a PDF.** In Word: *File → Save As → PDF*. In Google Docs: *File → Download → PDF*.
+- **It must contain real text.** If you can't highlight words in the PDF, it's a scanned image
+  and can't be read. Export it again from the original document.
+- **Use your most complete CV.** The skill never adds anything that isn't in it.
+- **Several CVs in the folder?** The skill asks which one to use.
+- **Your CV file is never changed, moved or uploaded.**
+- **Updated your CV?** Replace the PDF and run `/job_agents setup` again.
+- **Don't put your CV inside the skill folder.** It's a Git repository, so the CV could be
+  shared by accident.
+
+More options, such as Windows OneDrive desktops or changing the default folder:
+[docs/CONFIGURATION.md](docs/CONFIGURATION.md#cv-location).
+
+---
+
+## Commands
 
 | Command | What it does |
 |---|---|
-| `/job_agents` | Shows the pipeline status and suggests the next step |
-| `/job_agents setup [cv.pdf or folder]` | Reads your CV and builds your verified profile. **Run this first.** See [3.1](#31-where-to-put-your-cv) for where to put your CV. You review and confirm the profile, including any inconsistencies it flags. |
-| `/job_agents search` | Searches the web, checks each posting is real and open, removes duplicates, then scores and shortlists |
+| `/job_agents` | Shows your progress and suggests the next step |
+| `/job_agents setup [path]` | Reads your CV and builds your profile. **Run this first.** |
+| `/job_agents search` | Finds, checks and ranks new jobs |
 | `/job_agents rank` | Scores any jobs that haven't been scored yet |
-| `/job_agents tailor 12` | Writes a CV and cover letter tailored to job 12, then checks every claim against your profile |
-| `/job_agents prepare 12` | Fills in the application in Chrome and **stops before Submit**. You approve it, then submit. |
-| `/job_agents status` | Summary of the pipeline and upcoming deadlines |
-| `/job_agents schedule preview\|enable\|disable` | Automatic searches. Built in on macOS; see [section 5](#5-scheduled-searches-optional) for Linux and Windows. |
+| `/job_agents tailor <id>` | Writes a tailored CV and cover letter for a job |
+| `/job_agents prepare <id>` | Fills in the application in Chrome and stops before Submit |
+| `/job_agents status` | Summary of your applications and upcoming deadlines |
+| `/job_agents schedule ...` | Optional automatic searches ([setup](docs/CONFIGURATION.md#scheduled-searches)) |
 
-### A typical first run
-
-1. `/job_agents setup`: confirm or correct the profile it extracts.
-2. `/job_agents search`: you get a ranked table with score, matched skills, gaps, deadline and link.
-3. `/job_agents tailor <id>`: review the documents in `<data folder>/applications/<id>-<company>/`.
-4. `/job_agents prepare <id>`: sign in to the job site yourself, check the filled form, approve,
-   then submit.
-5. Later, record outcomes, for example: *"mark job 12 as interviewing"*.
+You can also just ask in plain words, for example *"mark job 12 as interviewing"*.
 
 ---
 
-## 5. Scheduled searches (optional)
+## Safety and privacy
 
-Scheduled runs only **search, score and record** jobs. They never write documents, fill forms or
-submit anything. They're off by default. Your computer must be on and awake at the scheduled
-times.
-
-### macOS: built in
-
-```
-/job_agents schedule preview     # shows the times and the LaunchAgent; changes nothing
-/job_agents schedule enable      # asks for your approval, then installs it
-/job_agents schedule disable     # removes it
-```
-
-### Linux: cron
-
-The included runner script needs `zsh` (`sudo apt install zsh`). Open your crontab with
-`crontab -e` and add this line. Cron uses your **system's local time**, so convert the times if
-your system time zone isn't the one in the config.
-
-```cron
-0 8,11,14,17,20 * * * PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" zsh "$HOME/.claude/skills/job_agents/scripts/scheduled_search.sh"
-```
-
-Logs go to `~/.job_agents/logs/`. To stop, delete the line with `crontab -e`.
-
-### Windows: Task Scheduler
-
-1. Create the file `%USERPROFILE%\.job_agents\scheduled_search.cmd` with this content:
-   ```bat
-   @echo off
-   if not exist "%USERPROFILE%\.job_agents\logs" mkdir "%USERPROFILE%\.job_agents\logs"
-   cd /d "%USERPROFILE%\.claude\skills\job_agents"
-   claude -p "/job_agents search --scheduled" --allowedTools "WebSearch" "WebFetch" "Read" "Write" "Bash(python3 *)" >> "%USERPROFILE%\.job_agents\logs\scheduled.log" 2>&1
-   ```
-2. Register the five daily runs (PowerShell). The times use your **Windows clock**:
-   ```powershell
-   foreach ($t in '08:00','11:00','14:00','17:00','20:00') {
-     schtasks /Create /F /SC DAILY /ST $t /TN "job_agents_search_$($t -replace ':','')" `
-       /TR "`"$env:USERPROFILE\.job_agents\scheduled_search.cmd`""
-   }
-   ```
-3. To stop, remove the tasks:
-   ```powershell
-   foreach ($t in '0800','1100','1400','1700','2000') { schtasks /Delete /F /TN "job_agents_search_$t" }
-   ```
+- **Never submits** an application without your approval for that specific job.
+- **Never invents** skills, jobs, dates, degrees or results. Every claim is checked against your CV.
+- **Never stores or types** passwords, one-time codes, or ID, passport or KRA PIN numbers. You
+  sign in to sites yourself.
+- **Skips scams** and uses only real company career pages and permitted job boards.
+- **Keeps your data private** on your own computer, outside the skill folder
+  ([details](docs/CONFIGURATION.md#where-your-data-is-stored)).
 
 ---
 
-## 6. Safety rules built into the skill
+## More documentation
 
-- **Truthfulness:** documents contain only facts from your verified profile. `verify_claims.py`
-  blocks any skill, metric, employer, degree or year count that isn't backed by the profile.
-- **Consent:** nothing is submitted, sent or signed up for without your approval for that
-  specific action.
-- **Privacy:** passwords, OTPs, national ID, passport and KRA PIN numbers are never stored or
-  typed. You sign in to sites yourself.
-- **Legitimacy:** it uses employer career pages and permitted job boards only, and skips postings
-  with scam signals.
-- **No duplicates:** the tracker refuses to apply to the same job twice.
-
----
-
-## 7. Troubleshooting
-
-| Problem | OS | Fix |
-|---|---|---|
-| `/job_agents` doesn't appear | All | Make sure the folder is named exactly `job_agents`, is inside `.claude/skills/`, and contains `SKILL.md`. Then restart Claude Code. |
-| "No CVs found" / "CV directory not found" | All | Make sure the CV is a PDF directly inside the folder (not a subfolder). Or skip the folder and run `/job_agents setup <path-to-cv.pdf>`. On Windows, check whether your Desktop is inside OneDrive. |
-| "Install pypdf ... to extract PDFs" | Linux / Windows | `python3 -m pip install --user pypdf` (Windows: `py -m pip install --user pypdf`). |
-| The extracted CV text is empty | All | The PDF is probably a scanned image. Export a text PDF from Word or Google Docs. |
-| "no DOCX converter found" | Linux / Windows | Install `pandoc` or LibreOffice (see the install steps), then open a new terminal. |
-| "Chrome not found - PDF skipped" | All | Install Chrome or Edge, or set `CHROME_PATH` to the browser's executable. |
-| `python3: command not found`, or the Microsoft Store opens | Windows | Follow [Make `python3` work](#2c-windows-1011). |
-| Claude Code says it needs Git Bash | Windows | Install Git for Windows (`winget install Git.Git`) and restart the terminal. |
-| `prepare` gives a copy sheet instead of filling the form | All | Install the Claude in Chrome extension and connect it. |
-| The scheduled search doesn't run | All | macOS: `python3 scripts/schedule.py status`. Linux: `grep CRON /var/log/syslog`. Windows: open Task Scheduler and check *Last Run Result*. Also check the logs in your data folder. |
-
----
-
-## Project layout
-
-```
-SKILL.md                      instructions Claude follows when you run /job_agents
-config/search_config.json     role families, location tiers, ranking weights, thresholds, schedule
-config/tech_terms.txt         vocabulary the anti-fabrication checker watches for
-references/*.md               job sources and scam checks, scoring rubric, document rules, browser steps
-scripts/cv_profile.py         discover / extract / validate / summary for the CV and profile
-scripts/score.py              weighted ranking
-scripts/tracker.py            SQLite tracker: duplicate checks, status lifecycle, approval gate
-scripts/render_docs.py        Markdown -> DOCX + text PDF + TXT (textutil / pandoc / LibreOffice; Chrome or Edge)
-scripts/verify_claims.py      flags unverified skills, metrics, years, degrees, employers
-scripts/schedule.py           macOS launchd schedule (preview / install --user-approved / uninstall)
-scripts/scheduled_search.sh   headless search-only run used by the schedule (macOS launchd, Linux cron)
-tests/                        unittest suite (uses a synthetic profile; no personal data)
-```
+| Guide | What's in it |
+|---|---|
+| [docs/INSTALL.md](docs/INSTALL.md) | Detailed install for macOS, Linux and Windows, updating, troubleshooting |
+| [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | CV location, search settings, other countries, data folder, scheduled searches |
+| [SKILL.md](SKILL.md) | The instructions Claude follows (for contributors) |
